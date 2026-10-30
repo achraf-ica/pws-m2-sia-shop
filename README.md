@@ -113,4 +113,57 @@ In conclusion, REST is often simpler to consume because its resources and HTTP m
 
 
 
-## Lab 1
+## Lab 2 
+
+## Run it
+
+    docker compose up --build -d
+
+Inventory: http://127.0.0.1:8000/docs — Orders: http://127.0.0.1:8001/docs
+
+## Lab 2 questions
+
+1. In section 3.4 you sent the same PUT twice and, in section 4.3, the same order twice.
+   What did each second request change? After a timeout, which one may a client resend
+   without asking, and which one may it not?
+2. Orders reserves stock with POST /products/{id}/reservations. Why not let Orders read
+   the stock with GET, then write the new value with PATCH? Describe two orders arriving
+   at the same moment for the last unit.
+3. When Inventory is stopped, Orders answers 503. What would a client have received
+   without the try/except, and why is that answer wrong?
+4. In compose.yaml, Orders reaches Inventory at http://inventory:8000. Why not
+   http://127.0.0.1:8000, which worked in section 4?
+
+
+## Answers
+
+1. Idempotency of PUT vs. POST : 
+
+The second PUT changed nothing: it replaced product 45 with the same full representation, so the server ended in the same state as after the first call. The second order, however, created a new order (id 2), reserved another batch of units and lowered the stock again. POST on /orders is not idempotent: each call has a new effect.
+
+After a timeout, a client may resend the PUT without asking: if the first one went through, the retry is harmless, and if it didn’t, the retry finishes the job. It may not blindly resend the order: if the first request actually succeeded and only the answer was lost, the customer would be charged and the stock reserved twice. It must first check (e.g. GET /orders) or the API must offer an idempotency key.
+
+
+2. Why a reservation resource instead of GET then PATCH
+
+
+Reading the stock and then writing a new value are two separate steps, and another request can slip in between them (a race condition, “lost update”). Take the last unit, stock = 1:
+Order A: GET → stock is 1, enough.
+
+Order B: GET → stock is 1, enough.
+
+Order A: PATCH stock=0.
+
+Order B: PATCH stock=0.
+
+Both orders are accepted, yet only one unit existed: the shop sold something it doesn’t have (and the stock written is wrong too if quantities differ). With POST .../reservations, Inventory does the check and the subtraction in one SQL statement (UPDATE ... SET stock = stock - ? WHERE id = ? AND stock >= ?). The database serializes the two statements: the first succeeds (stock 0), the second matches no row and gets a 409 Conflict. The decision stays with the service that owns the data.
+
+3. When Inventory is stopped, Orders answers 503. What would a client have received without the try/except, and why is that answer wrong?
+
+Without the try/except, the httpx.RequestError raised when Inventory is stopped would escape place_order and the client would receive a generic 500 Internal Server Error, an outcome that is not in the contract published by responses= (only 201, 409, 422, 502 and 503). That answer is wrong because a 500 says “Orders has a bug” when Orders works fine and its dependency is down, which is exactly what 503 Service Unavailable (“Inventory cannot be reached”) tells the client, along with the hint that retrying later is reasonable.
+
+
+4. In compose.yaml, Orders reaches Inventory at http://inventory:8000. Why not
+   http://127.0.0.1:8000, which worked in section 4?
+
+Inside the Orders container, 127.0.0.1 points back to that same container, where Inventory is not running, so the request would fail. In section 4 both services shared one host and therefore one 127.0.0.1, but under Compose each service has its own network and is reached by its service name (inventory), which Docker’s internal DNS resolves to the right container, on the port it listens on internally (8000).
