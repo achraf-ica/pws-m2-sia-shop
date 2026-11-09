@@ -1,0 +1,6 @@
+{"jsonrpc": "2.0", "id": 6, "method": "tools/call",
+ "params": {"name": "place_order", "arguments": {"product_id": 42, "quantity": 1},
+            "inputResponses": {"__main__:ask_the_user": {"action": "accept", "content": {"confirm": true}}},
+            "requestState": "v1.4BSWgzk-1Nj2m7CnaHxZI23-S5mAXbTgaGorF1gEpM5HUk5IMNpGG44DS1GJsWZZdX-COB7Yw__bKxAA8fsWFdKhBXQNG40RBcYEtCksr9bfXh5gRj0hAm69dgc7petj-ixxSw17wqlIjtvIwdVkWLuMPf8vERuYwzs77Pzrj1UXlEAJSiGRfwXPHJqOUzCC8xrHq756_8ZXMi1zs6QfcdMh9rPKZzlL8jZEp-d45wHfAFnExeozekuai8Px31vEUhBF8yb_jR1viVmKM0OlCETu_TQzskCDPjwklT8oqA6UxxgyvUysPLbjIM9A_5r6pVuGU0wDOIsiS4hv_KFfDnCizsgTT4M",
+            "_meta": {"io.modelcontextprotocol/protocolVersion": "2026-07-28",
+                      "io.modelcontextprotocol/clientCapabilities": {"elicitation": {}}}}}
